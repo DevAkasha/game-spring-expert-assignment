@@ -11,12 +11,45 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7.4-alpine
     container_name: gameexpert-redis
     ports:
       - "6379:6379"
+
+  app1:
+    build: .
+    container_name: gameexpert-app1
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gameexpert?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATA_REDIS_HOST: redis
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  app2:
+    build: .
+    container_name: gameexpert-app2
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gameexpert?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATA_REDIS_HOST: redis
+    ports:
+      - "8082:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
   mysql-data:

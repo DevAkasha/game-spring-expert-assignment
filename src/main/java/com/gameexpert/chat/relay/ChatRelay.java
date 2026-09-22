@@ -21,11 +21,15 @@ public class ChatRelay implements MessageListener {
     private final LocalChatSender localChatSender;
 
     public void publish(Long worldId, Object message) {
-        // TODO Lv 20: worldId와 message를 JSON으로 묶어 채팅 채널에 발행합니다.
+        Map<String, Object> envelope = Map.of("worldId", worldId, "message", message);
+        redisTemplate.convertAndSend(CHANNEL, objectMapper.writeValueAsString(envelope));
     }
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        // TODO Lv 20: JSON에서 worldId와 message를 읽어 localChatSender.send()로 전달합니다.
+        JsonNode envelope = objectMapper.readTree(message.getBody());
+        Long worldId = envelope.path("worldId").asLong();
+        JsonNode payload = envelope.path("message");
+        localChatSender.send(worldId, payload);
     }
 }
